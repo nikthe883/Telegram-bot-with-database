@@ -97,8 +97,10 @@ def helper_option_two():
                        "3. Търсене на потребител.\n"
                        "4. Промяна статус потребител.\n"
                        "5. Проверка оставащо време на потребител.\n"
+                       "6. Обратно\n"
                        )
-
+    if user_input == "6":
+        menu()
     # fool proof
     fool_proof_list = ["1", "2", "3", "4", "5"]
 
@@ -468,4 +470,4 @@ def send(bot, records, message):
 if __name__ == "__main__":
     while True:
         menu()
-        input("Press ")
+
