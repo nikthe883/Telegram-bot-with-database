@@ -6,7 +6,6 @@ import sqlite3
 from datetime import datetime
 import pandas as pd
 
-
 # connects to DB and gets the time
 con = sqlite3.connect("subscription.db")
 cur = con.cursor()
@@ -348,6 +347,7 @@ def auto_change_user_plan():
     except OperationalError:
         pass
 
+
 def predefined_message():
     """Helper function for predefined Telegram message"""
 
@@ -470,4 +470,3 @@ def send(bot, records, message):
 if __name__ == "__main__":
     while True:
         menu()
-
