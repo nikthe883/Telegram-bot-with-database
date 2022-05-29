@@ -274,10 +274,10 @@ def select_users(user_input):
         send_telegram_message(records)
 
     elif user_input == "4":
-        send_telegram_message(PAID_TELEGRAM_GROUP_ID)
+        send_telegram_message([PAID_TELEGRAM_GROUP_ID])
 
     elif user_input == "5":
-        send_telegram_message(UNPAID_TELEGRAM_GROUP_ID)
+        send_telegram_message([UNPAID_TELEGRAM_GROUP_ID])
 
     elif user_input == "6":
 
