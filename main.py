@@ -400,6 +400,14 @@ def helper_predefined_message():
         note = input("Моля, напишете забележката.\n")
         return note
 
+def send_image(records):
+    user_option = input("Желаете ли да изпратите снимка ?\n"
+                        "1. Да.\n"
+                        "2. Не\n")
+    if user_option == "1":
+        path = input("Моля, въведете пътя до избраната снимка\n")
+
+        BotSend().image(records, path)
 
 def send_telegram_message(records=None, both_groups=None):
     """Function for sending Telegram messages."""
@@ -414,6 +422,7 @@ def send_telegram_message(records=None, both_groups=None):
     if user_input == "1":
         message = predefined_message()
 
+
     # free text
     elif user_input == "2":
         message = input("Моля, напишете съобщение.\n")
@@ -425,7 +434,9 @@ def send_telegram_message(records=None, both_groups=None):
     # sending the message to admin telegram for proof reading.
     if check_message == "1":
         # bot.send_message(ADMIN_ID, text=message)
+        send_image(records=[ADMIN_ID])
         send_bot.send(records=[ADMIN_ID], message=message)
+
         print("Съобщението изпратено до админ през Телеграм.\n")
 
         # asking if the message is approved or not.
@@ -435,6 +446,7 @@ def send_telegram_message(records=None, both_groups=None):
 
         # sending the message to selected users
         if send_message == "1":
+            send_image(records)
             send_bot.send(records, message, both_groups)
 
         # not sending the message
@@ -447,7 +459,9 @@ def send_telegram_message(records=None, both_groups=None):
 
     # sending message to selected users without proof reading
     elif check_message == "2":
+        send_image(records)
         send_bot.send(records, message, both_groups)
+
 
     # fool proof
     else:

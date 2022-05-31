@@ -81,3 +81,6 @@ class BotSend:
                 print(f"Съобщението не се изпрати до следните потребители : {message_not_send_user_name}\n"
                       f"Причина : Потребителят не е започнал разговор с робота.\n")
 
+    def image(self, records, path):
+        for i in records:
+            self.bot.send_photo(i, photo=open(path, 'rb'))
