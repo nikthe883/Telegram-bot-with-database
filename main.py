@@ -1,10 +1,10 @@
-from telegram import Bot
-from telegram.error import BadRequest, Unauthorized
+
 from sqlite3 import OperationalError
 from dependencies import *
 import sqlite3
 from datetime import datetime
 import pandas as pd
+from tel_bot import TelegramBot, BotSend
 
 # connects to DB and gets the time
 con = sqlite3.connect("subscription.db")
@@ -254,6 +254,7 @@ def db_administration(user_input):
 
 def select_users(user_input):
     """A helper function for sending Telegram messages"""
+
     if user_input == "1":
         paid_user_id = '''SELECT telegram_id FROM Потребители WHERE subscription = "платен"'''
         cur.execute(paid_user_id)
@@ -273,15 +274,17 @@ def select_users(user_input):
         send_telegram_message(records)
 
     elif user_input == "4":
-        send_telegram_message([PAID_TELEGRAM_GROUP_ID])
+        both_groups = True
+        send_telegram_message([PAID_TELEGRAM_GROUP_ID], both_groups)
 
     elif user_input == "5":
-        send_telegram_message([UNPAID_TELEGRAM_GROUP_ID])
+        both_groups = True
+        send_telegram_message([UNPAID_TELEGRAM_GROUP_ID], both_groups)
 
     elif user_input == "6":
-
-        group_id_list = [PAID_TELEGRAM_GROUP_ID, UNPAID_TELEGRAM_GROUP_ID]
-        send_telegram_message(group_id_list)
+        both_groups = True
+        group_id_list = [UNPAID_TELEGRAM_GROUP_ID, PAID_TELEGRAM_GROUP_ID]
+        send_telegram_message(group_id_list, both_groups)
 
 
 def manual_check_user_subscription_time():
@@ -360,17 +363,19 @@ def predefined_message():
                      "2.Нормален.\n"
                      "3.Слаб.\n")
     if strength == "1":
-        signal_strength_color = "\U0001F7E2"
+        signal_strength_color = "Strong \U0001F7E2"
     elif strength == "2":
-        signal_strength_color = "\U0001F7E2"
+        signal_strength_color = "Average \U0001F7E2"
     elif strength == "3":
-        signal_strength_color = "\U0001F534"
+        signal_strength_color = "Weak \U0001F534"
     else:
         print("Моля, изберете валидна опция.\n")
+        menu()
 
     entry = input("Моля, въведете цена за вход.\n")
     stop_loss = input("Моля, въведете цена за stop loss.\n")
     take_profit = input("Моля, въведете цена за take profit.\n")
+    note = helper_predefined_message()
 
     message = f"Trading signal by bot \n" \
               f"Strength : {signal_strength_color}\n" \
@@ -378,16 +383,29 @@ def predefined_message():
               f"Currency : {currency} \n" \
               f"Stake : {stake} \n" \
               f"Entry : {entry}\n" \
-              f"SL {stop_loss}" \
-              f"TP: {take_profit} \n "
+              f"SL: {stop_loss}\n" \
+              f"TP: {take_profit}\n" \
+              f"---------------------\n" \
+              f"Info:\n" \
+              f"{note if note is not None else ''}" \
+
     return message
 
 
-def send_telegram_message(records):
+def helper_predefined_message():
+    user_input = input("Желаете ли да добавите забележка ?\n"
+                       "1. Да.\n"
+                       "2. Не.\n")
+    if user_input == "1":
+        note = input("Моля, напишете забележката.\n")
+        return note
+
+
+def send_telegram_message(records=None, both_groups=None):
     """Function for sending Telegram messages."""
 
     message = ""
-    bot = Bot(TOKEN)
+    send_bot = BotSend()
     # asks user what kind of message to send
     user_input = input("1. Предварително направено съобщение.\n"
                        "2. Свободно съобщение.\n")
@@ -406,7 +424,8 @@ def send_telegram_message(records):
                           "2. Не\n")
     # sending the message to admin telegram for proof reading.
     if check_message == "1":
-        bot.send_message(ADMIN_ID, text=message)
+        # bot.send_message(ADMIN_ID, text=message)
+        send_bot.send(records=[ADMIN_ID], message=message)
         print("Съобщението изпратено до админ през Телеграм.\n")
 
         # asking if the message is approved or not.
@@ -416,7 +435,7 @@ def send_telegram_message(records):
 
         # sending the message to selected users
         if send_message == "1":
-            send(bot, records, message)
+            send_bot.send(records, message, both_groups)
 
         # not sending the message
         elif send_message == "2":
@@ -428,45 +447,14 @@ def send_telegram_message(records):
 
     # sending message to selected users without proof reading
     elif check_message == "2":
-        send(bot, records, message)
+        send_bot.send(records, message, both_groups)
 
     # fool proof
     else:
         print("Грешно въведени данни.\n")
 
 
-def send(bot, records, message):
-    """The function that sends the message to the users"""
-    for i in records:
-        try:
-            # sending message successfully to users
-            bot.send_message(i, text=message)
-            message_send_user_name = '''SELECT name FROM Потребители WHERE telegram_id = ? '''
-            cur.execute(message_send_user_name, (i,))
-            message_send_user_name = [item[0] for item in cur.fetchall()]
-            print(f"Съобщението се изпрати до следните потребители : {message_send_user_name}")
-
-        except BadRequest:
-
-            # exception when user is not found
-            message_not_send_user_name = '''SELECT name FROM Потребители WHERE telegram_id = ? '''
-            cur.execute(message_not_send_user_name, (i,))
-            message_not_send_user_name = [item[0] for item in cur.fetchall()]
-            print(f"Съобщението не се изпрати до следните потребители : {message_not_send_user_name}\n"
-                  f"Причина : Грешно Телеграм id\n")
-
-        except Unauthorized:
-
-            # exception when user has not initialize conversation with bot.
-            # Only for individual messaging to users.
-
-            message_not_send_user_name = '''SELECT name FROM Потребители WHERE telegram_id = ? '''
-            cur.execute(message_not_send_user_name, (i,))
-            message_not_send_user_name = [item[0] for item in cur.fetchall()]
-            print(f"Съобщението не се изпрати до следните потребители : {message_not_send_user_name}\n"
-                  f"Причина : Потребителят не е започнал разговор с робота.\n")
-
-
 if __name__ == "__main__":
+
     while True:
         menu()
